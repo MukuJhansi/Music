@@ -1,0 +1,42 @@
+[
+    {
+        "id": "lavalink.jirayu.net",
+        "hostname": "lavalink.jirayu.net",
+        "password": "youshallnotpass",
+        "port": 13592,
+        "retryDelay": 40,
+        "secure": false
+    },
+    {
+        "id": "Catfein",
+        "hostname": "lava.catfein.com",
+        "password": "catfein",
+        "port": 4000,
+        "retryDelay": 40,
+        "secure": false
+    },
+    {
+        "id": "Catfein DE",
+        "hostname": "lavalink.alfari.id",
+        "password": "catfein",
+        "port": 443,
+        "retryDelay": 40,
+        "secure": true
+    },
+    {
+        "id": "LewdHuTao - Lavalink",
+        "hostname": "node.lewdhutao.my.eu.org",
+        "password": "youshallnotpass",
+        "port": 80,
+        "retryDelay": 40,
+        "secure": false
+    },
+    {
+        "id": "jompo.cloud - Lavalink",
+        "hostname": "lavalink-legacy.jompo.cloud",
+        "password": "jompo",
+        "port": 2333,
+        "retryDelay": 40,
+        "secure": false
+    }
+]
