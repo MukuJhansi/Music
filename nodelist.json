@@ -4,15 +4,47 @@
         "hostname": "lavalink.jirayu.net",
         "password": "youshallnotpass",
         "port": 13592,
-        "retryDelay": 40,
+        "retryDelay": 600,
         "secure": false
+    },
+    {
+        "id" : "Jompo v3"
+        "hostname" : "lavalink-legacy.jompo.cloud",
+        "port" : "2333",
+        "password" : "jompo",
+        "retryDelay": 600,
+        "secure" : false
+    },
+    {
+        "id" : "lavalinkv3-id.serenetia.com SSL",
+        "hostname" : "lavalinkv3-id.serenetia.com",
+        "port" : 443,
+        "password" : "BatuManaBisa",
+        "retryDelay": 600,      
+        "secure" : true
+    },
+    {
+        "id" : "lavalinkv3-id.serenetia.com Non SSL",
+        "hostname" : "lavalinkv3-id.serenetia.com",
+        "port" : 80,
+        "password" : "BatuManaBisa",
+        "retryDelay": 600,      
+        "secure" : false
+    },
+    {
+        "id" : "lavalink.jirayu.net",
+        "hostname" : "lavalink.jirayu.net",
+        "port" : 2334,
+        "password" : "youshallnotpass",
+        "retryDelay": 600,
+        "secure" : false  
     },
     {
         "id": "Catfein",
         "hostname": "lava.catfein.com",
         "password": "catfein",
         "port": 4000,
-        "retryDelay": 40,
+        "retryDelay": 600,
         "secure": false
     },
     {
@@ -20,7 +52,7 @@
         "hostname": "lavalink.alfari.id",
         "password": "catfein",
         "port": 443,
-        "retryDelay": 40,
+        "retryDelay": 600,
         "secure": true
     },
     {
@@ -28,7 +60,7 @@
         "hostname": "node.lewdhutao.my.eu.org",
         "password": "youshallnotpass",
         "port": 80,
-        "retryDelay": 40,
+        "retryDelay": 600,
         "secure": false
     },
     {
@@ -36,7 +68,7 @@
         "hostname": "lavalink-legacy.jompo.cloud",
         "password": "jompo",
         "port": 2333,
-        "retryDelay": 40,
+        "retryDelay": 600,
         "secure": false
     }
 ]
