@@ -21,20 +21,23 @@ import type { Bot } from "../../@types";
 export default async (bot: Bot, client: Client, interaction: Interaction) => {
     if (bot.blacklist && bot.blacklist.includes(interaction.user.id)) return;
 
-    const guildMember = interaction.guild!.members.cache.get(interaction.user.id);
+    if (!interaction.guild || !interaction.guild.members) return;
+
+
+    const guildMember = interaction.guild.members.cache.get(interaction.user.id);
     const voiceChannel = guildMember!.voice.channel;
 
     if (interaction.isButton()) {
         if (!voiceChannel) {
             return interaction.reply({ content: `❌ | You are not connected to an audio channel.`, ephemeral: true, components: [] })
                 .catch((error) => {
-                    bot.logger.emit('error', '[interactionCreate] Error reply: ' + error);
+                    bot.logger.emit('error', bot.shardId, '[interactionCreate] Error reply: ' + error);
                 });
         }
         if (interaction.guild?.members.me?.voice.channel && voiceChannel.id !== interaction.guild.members.me.voice.channelId) {
             return interaction.reply({ content: `❌ | You are not on the same audio channel as me.`, ephemeral: true, components: [] })
                 .catch((error) => {
-                    bot.logger.emit('error', '[interactionCreate] Error reply: ' + error);
+                    bot.logger.emit('error', bot.shardId, '[interactionCreate] Error reply: ' + error);
                 });
         }
 
@@ -44,7 +47,7 @@ export default async (bot: Bot, client: Client, interaction: Interaction) => {
         if (!player) {
             return interaction.reply({ content: '❌ | There is no music currently playing.', allowedMentions: { repliedUser: false } })
                 .catch((error) => {
-                    bot.logger.emit('error', '[interactionCreate] Error reply: ' + error);
+                    bot.logger.emit('error', bot.shardId, '[interactionCreate] Error reply: ' + error);
                 });
         }
 
@@ -113,15 +116,15 @@ export default async (bot: Bot, client: Client, interaction: Interaction) => {
                     const row = new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(select);
                     const msg = await interaction.reply({ content: `Select a song loop mode.`, ephemeral: true, components: [row] });
 
-                    const collector = interaction.channel!.createMessageComponentCollector({
+                    const collector = (interaction.channel as any /* discord.js type error ? (v14.16.2) */).createMessageComponentCollector({
                         time: 20000, // 20s
-                        filter: i => i.user.id === interaction.user.id
+                        filter: (i:any) => i.user.id === interaction.user.id
                     });
 
                     collector.on("collect", async (i: StringSelectMenuInteraction) => {
                         if (i.customId !== "Dashboard-Loop-Select") return;
 
-                        bot.logger.emit('discord', 'loop mode:' + i.values[0]);
+                        bot.logger.emit('discord', bot.shardId, 'loop mode:' + i.values[0]);
                         switch (i.values[0]) {
                             case 'Off': {
                                 mode = 0;
@@ -156,7 +159,7 @@ export default async (bot: Bot, client: Client, interaction: Interaction) => {
 
                 case 'Dashboard-Stop': {
                     if (bot.config.autoLeave) {
-                        await player.destroy();
+                        player.destroy();
                     }
                     else {
                         player.queue.clear();
@@ -184,7 +187,7 @@ export default async (bot: Bot, client: Client, interaction: Interaction) => {
                             return interaction.reply({ content: `✅ | I sent you the name of the music in a private message.`, ephemeral: true, components: [] });
                         })
                         .catch((error) => {
-                            bot.logger.emit('error', 'Error musicSave:', error);
+                            bot.logger.emit('error', bot.shardId, 'Error musicSave:' + error);
                             return interaction.reply({ content: `❌ | I can't send you a private message.`, ephemeral: true, components: [] });
                         });
 
@@ -192,16 +195,16 @@ export default async (bot: Bot, client: Client, interaction: Interaction) => {
                 }
 
                 case 'queuelist-prev': {
-                    if (!player.queuePage) return;
+                    if (!player.setting.queuePage) return;
 
-                    if (player.queuePage.curPage <= 1) {
-                        player.queuePage.curPage = 1;
+                    if (player.setting.queuePage.curPage <= 1) {
+                        player.setting.queuePage.curPage = 1;
                     }
                     else {
-                        player.queuePage.curPage--;
+                        player.setting.queuePage.curPage--;
                     }
 
-                    const page = player.queuePage.curPage;
+                    const page = player.setting.queuePage.curPage;
                     const startIdx = (page - 1) * 10;
                     const endIdx = page * 10;
 
@@ -220,7 +223,7 @@ export default async (bot: Bot, client: Client, interaction: Interaction) => {
                     }
                     else {
                         tracksQueue = tracks.join('\n');
-                        tracksQueue += `\n\n----- Page ${page}/${player.queuePage.maxPage} -----`;
+                        tracksQueue += `\n\n----- Page ${page}/${player.setting.queuePage.maxPage} -----`;
                     }
 
                     const methods = ['Off', 'Single', 'All'];
@@ -232,7 +235,7 @@ export default async (bot: Bot, client: Client, interaction: Interaction) => {
                     const clsButton = new ButtonBuilder().setCustomId('queuelist-clear').setLabel(cst.button.clear).setStyle(ButtonStyle.Danger);
                     const row = new ActionRowBuilder<ButtonBuilder>().addComponents(prevButton, nextButton, delButton, clsButton);
 
-                    await player.queuePage.msg?.edit({
+                    await player.setting.queuePage.msg?.edit({
                         embeds: [embeds.queue(bot.config.embedsColor, nowplaying, tracksQueue, methods[repeatMode])],
                         components: [row],
                         allowedMentions: { repliedUser: false },
@@ -243,16 +246,16 @@ export default async (bot: Bot, client: Client, interaction: Interaction) => {
                 }
 
                 case 'queuelist-next': {
-                    if (!player.queuePage) return;
+                    if (!player.setting.queuePage) return;
 
-                    if (player.queuePage.curPage >= player.queuePage.maxPage) {
-                        player.queuePage.curPage = player.queuePage.maxPage;
+                    if (player.setting.queuePage.curPage >= player.setting.queuePage.maxPage) {
+                        player.setting.queuePage.curPage = player.setting.queuePage.maxPage;
                     }
                     else {
-                        player.queuePage.curPage++;
+                        player.setting.queuePage.curPage++;
                     }
 
-                    const page = player.queuePage.curPage;
+                    const page = player.setting.queuePage.curPage;
                     const startIdx = (page - 1) * 10;
                     const endIdx = page * 10;
 
@@ -271,7 +274,7 @@ export default async (bot: Bot, client: Client, interaction: Interaction) => {
                     }
                     else {
                         tracksQueue = tracks.join('\n');
-                        tracksQueue += `\n\n----- Page ${page}/${player.queuePage.maxPage} -----`;
+                        tracksQueue += `\n\n----- Page ${page}/${player.setting.queuePage.maxPage} -----`;
                     }
 
                     const methods = ['Off', 'Single', 'All'];
@@ -283,7 +286,7 @@ export default async (bot: Bot, client: Client, interaction: Interaction) => {
                     const clsButton = new ButtonBuilder().setCustomId('queuelist-clear').setLabel(cst.button.clear).setStyle(ButtonStyle.Danger);
                     const row = new ActionRowBuilder<ButtonBuilder>().addComponents(prevButton, nextButton, delButton, clsButton);
 
-                    await player.queuePage.msg?.edit({
+                    await player.setting.queuePage.msg?.edit({
                         embeds: [embeds.queue(bot.config.embedsColor, nowplaying, tracksQueue, methods[repeatMode])],
                         components: [row],
                         allowedMentions: { repliedUser: false },
@@ -294,8 +297,10 @@ export default async (bot: Bot, client: Client, interaction: Interaction) => {
                 }
 
                 case 'queuelist-delete': {
-                    await player.queuePage.msg?.delete();
-                    player.queuePage.msg = null;
+                    if (!player.setting.queuePage) return;
+
+                    await player.setting.queuePage.msg?.delete();
+                    player.setting.queuePage.msg = null;
 
                     await interaction.deferUpdate();
                     break;
@@ -304,13 +309,13 @@ export default async (bot: Bot, client: Client, interaction: Interaction) => {
                 case 'queuelist-clear': {
                     player.queue.clear();
 
-                    if (!player.queuePage) return;
+                    if (!player.setting.queuePage) return;
 
-                    player.queuePage.maxPage = Math.ceil(player.queue.tracks.length / 10);
-                    player.queuePage.curPage = 1;
+                    player.setting.queuePage.maxPage = Math.ceil(player.queue.tracks.length / 10);
+                    player.setting.queuePage.curPage = 1;
 
 
-                    const page = player.queuePage.curPage;
+                    const page = player.setting.queuePage.curPage;
                     const startIdx = (page - 1) * 10;
                     const endIdx = page * 10;
 
@@ -329,7 +334,7 @@ export default async (bot: Bot, client: Client, interaction: Interaction) => {
                     }
                     else {
                         tracksQueue = tracks.join('\n');
-                        tracksQueue += `\n\n----- Page ${page}/${player.queuePage.maxPage} -----`;
+                        tracksQueue += `\n\n----- Page ${page}/${player.setting.queuePage.maxPage} -----`;
                     }
 
                     const methods = ['Off', 'Single', 'All'];
@@ -338,7 +343,7 @@ export default async (bot: Bot, client: Client, interaction: Interaction) => {
                     const delButton = new ButtonBuilder().setCustomId('queuelist-delete').setLabel(cst.button.delete).setStyle(ButtonStyle.Primary);
                     const row = new ActionRowBuilder<ButtonBuilder>().addComponents(delButton);
 
-                    await player.queuePage.msg?.edit({
+                    await player.setting.queuePage.msg?.edit({
                         embeds: [embeds.queue(bot.config.embedsColor, nowplaying, tracksQueue, methods[repeatMode])],
                         components: [row],
                         allowedMentions: { repliedUser: false },
@@ -350,11 +355,19 @@ export default async (bot: Bot, client: Client, interaction: Interaction) => {
             }
         }
         catch (error) {
-            bot.logger.emit('error', '[interactionCreate] Dashboard error: ' + error);
+            bot.logger.emit('error', bot.shardId, '[interactionCreate] Dashboard error: ' + error);
         }
     }
     else {
         if (!interaction.isCommand() || !interaction.inGuild() || interaction.member.user.bot) return;
+
+        if (!bot.config.slashCommand) {
+            return interaction.reply({ content: `❌ | The slash command is not enabled.`, allowedMentions: { repliedUser: false } })
+                .catch((error) => {
+                    bot.logger.emit('error', bot.shardId, `[interactionCreate] Error reply: (${interaction.user.username} : /${interaction.commandName})` + error);
+                    return;
+                });
+        }
 
 
         const cmd = client.commands.get(interaction.commandName);
@@ -362,35 +375,61 @@ export default async (bot: Bot, client: Client, interaction: Interaction) => {
         if (!cmd) return;
 
         if (cmd.requireAdmin) {
-            if (interaction.user.id !== bot.config.admin)
+            if (interaction.user.id !== bot.config.admin) {
                 return interaction.reply({ content: `❌ | This command requires administrator privileges.`, allowedMentions: { repliedUser: false } })
                     .catch((error) => {
-                        bot.logger.emit('error', '[interactionCreate] Error reply: ' + error);
+                        bot.logger.emit('error', bot.shardId, `[interactionCreate] Error reply: (${interaction.user.username} : /${interaction.commandName})` + error);
+                        return;
                     });
+            }
         }
 
         if (cmd.voiceChannel) {
             if (!voiceChannel) {
                 return interaction.reply({ content: `❌ | You are not connected to an audio channel.`, allowedMentions: { repliedUser: false } })
                     .catch((error) => {
-                        bot.logger.emit('error', '[interactionCreate] Error reply: ' + error);
+                        bot.logger.emit('error', bot.shardId, `[interactionCreate] Error reply: (${interaction.user.username} : /${interaction.commandName})` + error);
+                        return;
                     });
             }
+
             if (interaction.guild?.members.me?.voice.channel && voiceChannel.id !== interaction.guild.members.me.voice.channelId) {
                 return interaction.reply({ content: `❌ | You are not on the same audio channel as me.`, allowedMentions: { repliedUser: false } })
                     .catch((error) => {
-                        bot.logger.emit('error', '[interactionCreate] Error reply: ' + error);
+                        bot.logger.emit('error', bot.shardId, `[interactionCreate] Error reply: (${interaction.user.username} : /${interaction.commandName})` + error);
+                        return;
                     });
             }
         }
 
 
-        bot.logger.emit('discord', `[interactionCreate] (${cst.color.grey}${guildMember?.guild.name}${cst.color.white}) ${interaction.user.username} : /${interaction.commandName}`);
+        bot.logger.emit('discord', bot.shardId, `[interactionCreate] (${cst.color.grey}${guildMember?.guild.name}${cst.color.white}) ${interaction.user.username} : /${interaction.commandName}`);
 
-        await interaction.deferReply()
-            .catch((error) => {
-                bot.logger.emit('error', '[interactionCreate] Error deferReply: ' + error);
-            });
+        let guild;
+
+        // Ensure guild data is in cache
+        try {
+            guild = await client.guilds.fetch(interaction.guildId!);
+        } catch (error) {
+            bot.logger.emit('error', bot.shardId, `[interactionCreate] Error fetching guild: ${error}`);
+            return interaction.reply({ content: `❌ | Unable to get guild data in cache.`, allowedMentions: { repliedUser: false } });
+        }
+
+        // Ensure member is in cache
+        try {
+            await guild.members.fetch(interaction.user.id);
+        } catch (error) {
+            bot.logger.emit('error', bot.shardId, `[interactionCreate] Error fetching member: ${error}`);
+            return interaction.reply({ content: `❌ | Unable to get member data in cache.`, allowedMentions: { repliedUser: false } });
+        }
+
+
+        // Send typing
+        try {
+            await interaction.deferReply();
+        } catch (error) {
+            bot.logger.emit('error', bot.shardId, '[interactionCreate] Error deferReply: ' + error);
+        }
 
         cmd.slashExecute(bot, client, interaction);
     }

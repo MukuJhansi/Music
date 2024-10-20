@@ -28,7 +28,7 @@ If you encounter any issues or would like to contribute to the community, please
 
 ### Clone the latest version of the repository
 ```
-git clone -b v2.1.1 https://github.com/hmes98318/Music-Disc.git
+git clone -b v3.0.0 https://github.com/hmes98318/Music-Disc.git
 ```
 or [**click here**](https://github.com/hmes98318/Music-Disc/releases) to download  
 
@@ -36,12 +36,13 @@ or [**click here**](https://github.com/hmes98318/Music-Disc/releases) to downloa
 ### Install the dependencies
 install all the dependencies from [**package.json**](./package.json)  
 ```
-npm install
+npm ci
 ```
 
 
 ### Add Lavalink node
 Edit the [`nodelist.json`](./nodelist.json) file to add a [Lavalink](https://github.com/lavalink-devs/Lavalink) node.  
+Only supports Lavalink **v4** nodes, **v4.0.8** or higher is recommended.  
  * Use [public node](https://lavalink-list.darrennathanael.com/)  
  * or [host your own](https://blog.darrennathanael.com/post/how-to-lavalink/)  
  * or enable [local node setup](https://musicdisc.ggwp.tw/docs/Environment-variables-description#local-node)  
@@ -77,6 +78,7 @@ BOT_PREFIX = "+"
 BOT_STATUS = "online"
 BOT_PLAYING = "+help | music"
 BOT_EMBEDS_COLOR = "#FFFFFF"
+BOT_SLASH_COMMAND = true
 
 
 # Volume settings
@@ -130,10 +132,9 @@ If you don't have any available nodes, you need to first start the server contai
 ### Start with Docker Compose
 Please put your **token** into the `BOT_TOKEN` variable.  
 ```yml
-version: '3.8'
 services:
   music-disc:
-    image: hmes98318/music-disc:2.1.1
+    image: hmes98318/music-disc:latest
     container_name: music-disc
     restart: always
     environment:
@@ -148,8 +149,11 @@ services:
       BOT_PREFIX: "+"
       BOT_PLAYING: "+help | music"
       BOT_EMBEDS_COLOR: "#FFFFFF"
+      BOT_SLASH_COMMAND: true
+
       DEFAULT_VOLUME: 50
       MAX_VOLUME: 100
+
       AUTO_LEAVE: "true"
       AUTO_LEAVE_COOLDOWN: 5000
       DISPLAY_VOICE_STATE: "true"
@@ -197,6 +201,7 @@ docker run -d \
   -e BOT_PREFIX="+" \
   -e BOT_PLAYING="+help | music" \
   -e BOT_EMBEDS_COLOR="#FFFFFF" \
+  -e BOT_SLASH_COMMAND="#true" \
   -e DEFAULT_VOLUME=50 \
   -e MAX_VOLUME=100 \
   -e AUTO_LEAVE="true" \
@@ -215,5 +220,5 @@ docker run -d \
   -v $(pwd)/nodelist.json:/bot/nodelist.json \
   -v $(pwd)/blacklist.json:/bot/blacklist.json \
   -p 33333:33333 \
-  hmes98318/music-disc:2.1.1
+  hmes98318/music-disc:latest
 ```

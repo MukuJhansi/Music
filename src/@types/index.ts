@@ -6,7 +6,9 @@ import type {
     Message
 } from "discord.js";
 import type { LavaShark } from "lavashark";
-import type { Logger } from "../core/lib/Logger";
+
+import type { Logger } from "../lib/Logger";
+import type { IPBlockerConfig, SessionManagerConfig } from "./SessionManager.types";
 
 
 declare module 'discord.js' {
@@ -18,20 +20,46 @@ declare module 'discord.js' {
 
 declare module 'lavashark' {
     export interface Player {
-        dashboard: Message<boolean> | null,
-        metadata: Message<boolean> | ChatInputCommandInteraction | null,
-        queuePage: QueuePage
+        dashboard: Message<boolean> | null;
+        metadata: Message<boolean> | ChatInputCommandInteraction | null;
+        setting: PlayerSetting;
     }
+}
+
+export interface PlayerSetting {
+    queuePage: QueuePage | null;
+    volume: number | null;
+}
+
+export interface QueuePage {
+    maxPage: number;
+    curPage: number;
+    msg: Message<boolean> | null;
+}
+
+
+export enum LoginType {
+    USER = 'USER',
+    OAUTH2 = 'OAUTH2'
 }
 
 
 export interface Bot {
+    shardId: number;
     blacklist: string[];
     config: Config;
     logger: Logger;
     sysInfo: SystemInfo;
+    stats: {
+        guildsCount: number[];
+        membersCount: number[];
+        lastRefresh: number | null;     // Date.now()
+    }
 }
 
+/**
+ * Constants variables
+ */
 export interface Config {
     admin: string | null;
     clientSecret: string | null;
@@ -40,6 +68,7 @@ export interface Config {
     status: ClientPresenceStatus | string;
     playing: string;
     embedsColor: HexColorString | string | number;
+    slashCommand: boolean;
     defaultVolume: number;
     maxVolume: number;
     autoLeave: boolean;
@@ -49,6 +78,8 @@ export interface Config {
     site: SiteConfig;
     enableLocalNode: boolean;
     localNode: LocalNode;
+    sessionManager: SessionManagerConfig;
+    ipBlocker: IPBlockerConfig;
 }
 
 interface SiteConfig {
@@ -94,16 +125,15 @@ export interface SystemStatus {
         api: number;
     };
     serverCount: number;
+    totalMembers: number;
     playing: number;
 }
 
-export interface QueuePage {
-    maxPage: number;
-    curPage: number;
-    msg: Message<boolean> | null;
-}
 
-export enum LoginType {
-    USER = 'USER',
-    OAUTH2 = 'OAUTH2'
+export enum LoadType {
+    TRACK = 'track',
+    PLAYLIST = 'playlist',
+    SEARCH = 'search',
+    EMPTY = 'empty',
+    ERROR = 'error'
 }

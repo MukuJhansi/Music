@@ -1,6 +1,7 @@
 import { dashboard } from "../dashboard";
 import { embeds } from "../embeds";
 import { isUserInBlacklist } from "../utils/functions/isUserInBlacklist";
+import { LoadType } from "../@types";
 
 import type { ChatInputCommandInteraction, Client, Message } from "discord.js";
 import type { Bot } from "../@types";
@@ -32,11 +33,11 @@ export const execute = async (bot: Bot, client: Client, message: Message, args: 
     const str = args.join(' ');
     const res = await client.lavashark.search(str);
 
-    if (res.loadType === "LOAD_FAILED") {
-        bot.logger.emit('error', `Search Error: ${res.exception?.message}`);
+    if (res.loadType === LoadType.ERROR) {
+        bot.logger.emit('error', bot.shardId, `Search Error: ${res.exception?.message}`);
         return message.reply({ content: `❌ | No results found.`, allowedMentions: { repliedUser: false } });
     }
-    else if (res.loadType === "NO_MATCHES") {
+    else if (res.loadType === LoadType.EMPTY) {
         return message.reply({ content: `❌ | No matches.`, allowedMentions: { repliedUser: false } });
     }
 
@@ -58,13 +59,22 @@ export const execute = async (bot: Bot, client: Client, message: Message, args: 
         selfDeaf: true
     });
 
+    if (!player.setting) {
+        player.setting = {
+            queuePage: null,
+            volume: null
+        };
+    }
+
+    const curVolume = player.setting.volume ?? bot.config.defaultVolume;
+
     try {
         // Connects to the voice channel
         await player.connect();
         player.metadata = message;
-        player.filters.setVolume(bot.config.defaultVolume);
+        player.filters.setVolume(curVolume);
     } catch (error) {
-        bot.logger.emit('error', 'Error joining channel: ' + error);
+        bot.logger.emit('error', bot.shardId, 'Error joining channel: ' + error);
         return message.reply({ content: `❌ | I can't join voice channel.`, allowedMentions: { repliedUser: false } });
     }
 
@@ -76,7 +86,7 @@ export const execute = async (bot: Bot, client: Client, message: Message, args: 
     }
 
 
-    if (res.loadType === 'PLAYLIST_LOADED') {
+    if (res.loadType === LoadType.PLAYLIST) {
         player.addTracks(res.tracks, message.author);
     }
     else {
@@ -87,9 +97,9 @@ export const execute = async (bot: Bot, client: Client, message: Message, args: 
     if (!player.playing) {
         await player.play()
             .catch(async (error) => {
-                bot.logger.emit('error', 'Error playing track: ' + error);
+                bot.logger.emit('error', bot.shardId, 'Error playing track: ' + error);
                 await message.reply({ content: `❌ | The service is experiencing some problems, please try again.`, allowedMentions: { repliedUser: false } });
-                return await player.destroy();
+                return player.destroy();
             });
     }
 
@@ -100,11 +110,11 @@ export const slashExecute = async (bot: Bot, client: Client, interaction: ChatIn
     const str = interaction.options.getString("play");
     const res = await client.lavashark.search(str!);
 
-    if (res.loadType === "LOAD_FAILED") {
-        bot.logger.emit('error', `Search Error: ${res.exception?.message}`);
+    if (res.loadType === LoadType.ERROR) {
+        bot.logger.emit('error', bot.shardId, `Search Error: ${res.exception?.message}`);
         return interaction.editReply({ content: `❌ | No results found.`, allowedMentions: { repliedUser: false } });
     }
-    else if (res.loadType === "NO_MATCHES") {
+    else if (res.loadType === LoadType.EMPTY) {
         return interaction.editReply({ content: `❌ | No matches.`, allowedMentions: { repliedUser: false } });
     }
 
@@ -129,13 +139,22 @@ export const slashExecute = async (bot: Bot, client: Client, interaction: ChatIn
         selfDeaf: true
     });
 
+    if (!player.setting) {
+        player.setting = {
+            queuePage: null,
+            volume: null
+        };
+    }
+
+    const curVolume = player.setting.volume ?? bot.config.defaultVolume;
+
     try {
         // Connects to the voice channel
         await player.connect();
         player.metadata = interaction;
-        player.filters.setVolume(bot.config.defaultVolume);
+        player.filters.setVolume(curVolume);
     } catch (error) {
-        bot.logger.emit('error', 'Error joining channel: ' + error);
+        bot.logger.emit('error', bot.shardId, 'Error joining channel: ' + error);
         return interaction.editReply({ content: `❌ | I can't join voice channel.`, allowedMentions: { repliedUser: false } });
     }
 
@@ -147,7 +166,7 @@ export const slashExecute = async (bot: Bot, client: Client, interaction: ChatIn
     }
 
 
-    if (res.loadType === 'PLAYLIST_LOADED') {
+    if (res.loadType === LoadType.PLAYLIST) {
         player.addTracks(res.tracks, interaction.user);
     }
     else {
@@ -158,9 +177,9 @@ export const slashExecute = async (bot: Bot, client: Client, interaction: ChatIn
     if (!player.playing) {
         await player.play()
             .catch(async (error) => {
-                bot.logger.emit('error', 'Error playing track: ' + error);
+                bot.logger.emit('error', bot.shardId, 'Error playing track: ' + error);
                 await interaction.editReply({ content: `❌ | The service is experiencing some problems, please try again.`, allowedMentions: { repliedUser: false } });
-                return await player.destroy();
+                return player.destroy();
             });
     }
 
