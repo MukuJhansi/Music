@@ -10,7 +10,7 @@
     {
         "id" : "Jompo v3",
         "hostname" : "lavalink-legacy.jompo.cloud",
-        "port" : "2333",
+        "port" : 2333,
         "password" : "jompo",
         "retryDelay": 600,
         "secure" : false
